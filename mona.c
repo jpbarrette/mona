@@ -23,6 +23,7 @@
 
 #define RANDINT(max) (int)((random() / (double)RAND_MAX) * (max))
 #define RANDDOUBLE(max) ((random() / (double)RAND_MAX) * max)
+#define RANDSIGNEDDOUBLE(max) (((random() / (double)RAND_MAX) * 2 * max) - max)
 #define ABS(val) ((val) < 0 ? -(val) : (val))
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : \
                               (val) > (max) ? (max) : (val))
@@ -138,7 +139,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].a += RANDDOUBLE(0.1);
+                dna_test[mutated_shape].a += RANDSIGNEDDOUBLE(0.1);
                 dna_test[mutated_shape].a = CLAMP(dna_test[mutated_shape].a, 0.0, 1.0);
             }
             else
@@ -148,7 +149,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].r += RANDDOUBLE(0.1);
+                dna_test[mutated_shape].r += RANDSIGNEDDOUBLE(0.1);
                 dna_test[mutated_shape].r = CLAMP(dna_test[mutated_shape].r, 0.0, 1.0);
             }
             else
@@ -158,7 +159,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].g += RANDDOUBLE(0.1);
+                dna_test[mutated_shape].g += RANDSIGNEDDOUBLE(0.1);
                 dna_test[mutated_shape].g = CLAMP(dna_test[mutated_shape].g, 0.0, 1.0);
             }
             else
@@ -168,7 +169,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].b += RANDDOUBLE(0.1);
+                dna_test[mutated_shape].b += RANDSIGNEDDOUBLE(0.1);
                 dna_test[mutated_shape].b = CLAMP(dna_test[mutated_shape].b, 0.0, 1.0);
             }
             else
@@ -184,7 +185,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].points[point_i].x += (int)RANDDOUBLE(WIDTH/10.0);
+                dna_test[mutated_shape].points[point_i].x += (int)RANDSIGNEDDOUBLE(WIDTH/10.0);
                 dna_test[mutated_shape].points[point_i].x = CLAMP(dna_test[mutated_shape].points[point_i].x, 0, WIDTH-1);
             }
             else
@@ -194,7 +195,7 @@ int mutate(void)
         {
             if(drastic < 1)
             {
-                dna_test[mutated_shape].points[point_i].y += (int)RANDDOUBLE(HEIGHT/10.0);
+                dna_test[mutated_shape].points[point_i].y += (int)RANDSIGNEDDOUBLE(HEIGHT/10.0);
                 dna_test[mutated_shape].points[point_i].y = CLAMP(dna_test[mutated_shape].points[point_i].y, 0, HEIGHT-1);
             }
             else
