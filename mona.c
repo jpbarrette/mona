@@ -1,7 +1,7 @@
 // written by nick welch <nick@incise.org>.  author disclaims copyright.
 
 #ifndef NUM_POINTS
-#define NUM_POINTS 6
+#define NUM_POINTS 3
 #endif
 
 #ifndef NUM_SHAPES
@@ -216,19 +216,17 @@ int mutate(void)
 
 }
 
-int MAX_FITNESS = -1;
+unsigned MAX_FITNESS = UINT_MAX;
 
 unsigned char * goal_data = NULL;
 
-int difference(cairo_surface_t * test_surf, cairo_surface_t * goal_surf)
+unsigned long long difference(cairo_surface_t * test_surf, cairo_surface_t * goal_surf)
 {
     unsigned char * test_data = cairo_image_surface_get_data(test_surf);
     if(!goal_data)
         goal_data = cairo_image_surface_get_data(goal_surf);
-
-    int difference = 0;
-
-    int my_max_fitness = 0;
+ 
+    unsigned long long difference = 0;
 
     for(int y = 0; y < HEIGHT; y++)
     {
@@ -236,28 +234,23 @@ int difference(cairo_surface_t * test_surf, cairo_surface_t * goal_surf)
         {
             int thispixel = y*WIDTH*4 + x*4;
 
-            unsigned char test_a = test_data[thispixel];
-            unsigned char test_r = test_data[thispixel + 1];
-            unsigned char test_g = test_data[thispixel + 2];
-            unsigned char test_b = test_data[thispixel + 3];
+            unsigned test_a = test_data[thispixel];
+            unsigned test_r = test_data[thispixel + 1];
+            unsigned test_g = test_data[thispixel + 2];
+            unsigned test_b = test_data[thispixel + 3];
 
-            unsigned char goal_a = goal_data[thispixel];
-            unsigned char goal_r = goal_data[thispixel + 1];
-            unsigned char goal_g = goal_data[thispixel + 2];
-            unsigned char goal_b = goal_data[thispixel + 3];
+            unsigned goal_a = goal_data[thispixel];
+            unsigned goal_r = goal_data[thispixel + 1];
+            unsigned goal_g = goal_data[thispixel + 2];
+            unsigned goal_b = goal_data[thispixel + 3];
 
-            if(MAX_FITNESS == -1)
-                my_max_fitness += goal_a + goal_r + goal_g + goal_b;
-
-            difference += ABS(test_a - goal_a);
-            difference += ABS(test_r - goal_r);
-            difference += ABS(test_g - goal_g);
-            difference += ABS(test_b - goal_b);
+            difference += (test_a - goal_a) * (test_a - goal_a);
+            difference += (test_r - goal_r) * (test_r - goal_r);
+            difference += (test_g - goal_g) * (test_g - goal_g);
+            difference += (test_b - goal_b) * (test_b - goal_b);
         }
     }
 
-    if(MAX_FITNESS == -1)
-        MAX_FITNESS = my_max_fitness;
     return difference;
 }
 
@@ -292,14 +285,14 @@ static void mainloop(cairo_surface_t * pngsurf)
     cairo_t * goalcr = cairo_create(goalsurf);
     copy_surf_to(pngsurf, goalcr);
 
-    int lowestdiff = INT_MAX;
+    unsigned long long lowestdiff = ULLONG_MAX;
     int teststep = 0;
     int beststep = 0;
     for(;;) {
         int other_mutated = mutate();
         draw_dna(dna_test, test_cr);
 
-        int diff = difference(test_surf, goalsurf);
+        unsigned long long diff = difference(test_surf, goalsurf);
         if(diff < lowestdiff)
         {
             beststep++;
@@ -367,7 +360,7 @@ static void mainloop(cairo_surface_t * pngsurf)
 int main(int argc, char ** argv) {
     cairo_surface_t * pngsurf;
     if(argc == 1)
-        pngsurf = cairo_image_surface_create_from_png("mona.png");
+        pngsurf = cairo_image_surface_create_from_png("portrait.png");
     else
         pngsurf = cairo_image_surface_create_from_png(argv[1]);
 
