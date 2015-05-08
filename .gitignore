@@ -14,3 +14,12 @@ jp.png
 portrait.png
 
 portrait.xcf
+
+*.cmake
+
+CMakeFiles/*
+CMakeScripts/*
+mona.build/*
+mona.xcodeproj/*
+CMakeCache.txt
+Makefile
