@@ -368,7 +368,9 @@ int main(int argc, char ** argv) {
     HEIGHT = cairo_image_surface_get_height(pngsurf);
 
     srandom(getpid() + time(NULL));
+#ifdef SHOWWINDOW
     x_init();
+#endif
     mainloop(pngsurf);
 }
 
