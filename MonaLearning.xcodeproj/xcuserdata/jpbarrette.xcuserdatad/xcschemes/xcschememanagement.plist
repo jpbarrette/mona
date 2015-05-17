@@ -4,7 +4,7 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>mona-c.xcscheme</key>
+		<key>MonaLearning.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
@@ -12,7 +12,7 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>D5719CDB1AFA54B10069A6A4</key>
+		<key>D50159CC1AFDE45900D14268</key>
 		<dict>
 			<key>primary</key>
 			<true/>

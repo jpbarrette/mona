@@ -5,16 +5,16 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>A2B1660E-B1BD-4D55-81B3-2AEB4E95C6FD</string>
+	<string>D6F5D2FD-E136-4F20-9ACC-8429137064A3</string>
 	<key>IDESourceControlProjectName</key>
-	<string>mona-c</string>
+	<string>project</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>F00B1B8DE5A22D31F4C37AED60CCDDA36D4133F3</key>
 		<string>https://github.com/mackstann/mona.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>mona-c.xcodeproj</string>
+	<string>MonaLearning.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>F00B1B8DE5A22D31F4C37AED60CCDDA36D4133F3</key>

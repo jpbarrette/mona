@@ -8,18 +8,20 @@
 #define NUM_SHAPES 40
 #endif
 
+
+
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
-#include <limits.h>
 
-#include <cairo.h>
-#include <cairo-xlib.h>
+#include <SDL2/SDL.h>
+#include <SDL2_image/SDL_image.h>
 
 #define RANDINT(max) (int)((random() / (double)RAND_MAX) * (max))
 #define RANDDOUBLE(max) ((random() / (double)RAND_MAX) * max)
@@ -30,54 +32,16 @@
 
 int WIDTH;
 int HEIGHT;
+SDL_Window* gWindow = NULL;
+SDL_Surface* gScreen = NULL;
+//The window renderer
+SDL_Renderer* gRenderer = NULL;
+SDL_Texture* gTexture = NULL;
 
-//////////////////////// X11 stuff ////////////////////////
-#ifdef SHOWWINDOW
-
-#include <X11/Xlib.h>
-
-Display * dpy;
-int screen;
-Window win;
-GC gc;
-Pixmap pixmap;
-
-void x_init(void)
-{
-    if(!(dpy = XOpenDisplay(NULL)))
-    {
-        fprintf(stderr, "Failed to open X display %s\n", XDisplayName(NULL));
-        exit(1);
-    }
-
-    screen = DefaultScreen(dpy);
-
-    XSetWindowAttributes attr;
-    attr.background_pixmap = ParentRelative;
-    win = XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-                   WIDTH, HEIGHT, 0,
-                   DefaultDepth(dpy, screen), CopyFromParent, DefaultVisual(dpy, screen),
-                   CWBackPixmap, &attr);
-
-    pixmap = XCreatePixmap(dpy, win, WIDTH, HEIGHT,
-            DefaultDepth(dpy, screen));
-
-    gc = XCreateGC(dpy, pixmap, 0, NULL);
-
-    XSelectInput(dpy, win, ExposureMask);
-
-    XMapWindow(dpy, win);
-}
-#endif
-//////////////////////// end X11 stuff ////////////////////////
 
 typedef struct {
-    double x, y;
-} point_t;
-
-typedef struct {
-    double r, g, b, a;
-    point_t points[NUM_POINTS];
+    uint8_t r, g, b, a;
+    SDL_Point points[NUM_POINTS];
 } shape_t;
 
 shape_t dna_best[NUM_SHAPES];
@@ -85,24 +49,27 @@ shape_t dna_test[NUM_SHAPES];
 
 int mutated_shape;
 
-void draw_shape(shape_t * dna, cairo_t * cr, int i)
+void draw_shape(shape_t * dna, SDL_Texture* surf, int i)
 {
-    cairo_set_line_width(cr, 0);
     shape_t * shape = &dna[i];
-    cairo_set_source_rgba(cr, shape->r, shape->g, shape->b, shape->a);
-    cairo_move_to(cr, shape->points[0].x, shape->points[0].y);
-    for(int j = 1; j < NUM_POINTS; j++)
-        cairo_line_to(cr, shape->points[j].x, shape->points[j].y);
-    cairo_fill(cr);
+
+    SDL_SetRenderDrawColor( gRenderer, shape->r, shape->g, shape->b, shape->a);
+    SDL_RenderDrawLines(gRenderer, &shape->points, NUM_POINTS);
 }
 
-void draw_dna(shape_t * dna, cairo_t * cr)
+void draw_dna(shape_t * dna, SDL_Texture* texture)
 {
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, 0, 0, WIDTH, HEIGHT);
-    cairo_fill(cr);
+    //Make self render target
+    SDL_SetRenderTarget( gRenderer, texture );
+    SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+    SDL_RenderClear(gRenderer);
+
     for(int i = 0; i < NUM_SHAPES; i++)
-        draw_shape(dna, cr, i);
+        draw_shape(dna, texture, i);
+
+    SDL_RenderPresent(gRenderer);
+    //Reset render target
+    SDL_SetRenderTarget( gRenderer, NULL );
 }
 
 void init_dna(shape_t * dna)
@@ -118,10 +85,6 @@ void init_dna(shape_t * dna)
         dna[i].g = RANDDOUBLE(1);
         dna[i].b = RANDDOUBLE(1);
         dna[i].a = RANDDOUBLE(1);
-        //dna[i].r = 0.5;
-        //dna[i].g = 0.5;
-        //dna[i].b = 0.5;
-        //dna[i].a = 1;
     }
 }
 
@@ -214,35 +177,92 @@ int mutate(void)
     }
     return -1;
 
+    // Could we have triangles split in half and others being removed if they participate almost nothing to the image?
+
 }
 
 unsigned MAX_FITNESS = UINT_MAX;
 
 unsigned char * goal_data = NULL;
 
-unsigned long long difference(cairo_surface_t * test_surf, cairo_surface_t * goal_surf)
+// get Uint32 variable (pixel) from surface at x, y
+Uint32 get_pixel32(SDL_Surface *surface, int x)
 {
-    unsigned char * test_data = cairo_image_surface_get_data(test_surf);
-    if(!goal_data)
-        goal_data = cairo_image_surface_get_data(goal_surf);
- 
+	Uint32 *pixels = (Uint32 *)surface->pixels;
+	return pixels[x];
+}
+
+unsigned long long difference(SDL_Texture* test_texture)
+{
     unsigned long long difference = 0;
+    static SDL_Surface* test_surf = NULL;
+    static SDL_Surface* goal_surf = NULL;
+
+    if (goal_surf == NULL)
+    {
+        Uint32 format;
+        if (SDL_QueryTexture(test_texture, &format, NULL, NULL, NULL) != 0)
+        {
+            printf("Error when querying texture! SDL Error:%s\n", SDL_GetError());
+            return 0;
+        }
+        if (format == SDL_PIXELFORMAT_ARGB8888)
+        {
+            void* pixels = NULL;
+            int pitch = 0;
+            if (SDL_LockTexture(gTexture, NULL, &pixels, &pitch) != 0)
+            {
+                printf("Error when locking texture! SDL Error:%s\n", SDL_GetError());
+                return 0;
+            }
+            
+            goal_surf = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0x00ff0000,0x0000ff00,0x000000ff,0xff000000);
+            memcpy(pixels, goal_surf->pixels, pitch * goal_surf->h);
+            
+            
+            //Unlock texture to update
+            SDL_UnlockTexture(gTexture);
+        }
+    }
+
+
+    //Lock texture for manipulation
+    {
+        void* pixels = NULL;
+        int pitch = 0;
+        SDL_LockTexture(test_texture, NULL, &pixels, &pitch);
+
+        if (test_surf == NULL)
+        {
+            test_surf = SDL_CreateRGBSurfaceFrom(
+                pixels, WIDTH, HEIGHT, 
+                4, pitch,
+                0x00ff0000,0x0000ff00,0x000000ff,0xff000000);
+        }
+        else
+        {
+            //Copy loaded/formatted surface pixels
+            memcpy(pixels, test_surf->pixels, test_surf->pitch * test_surf->h);
+        }
+    
+        //Unlock texture to update
+        SDL_UnlockTexture(test_texture);
+    }
+
 
     for(int y = 0; y < HEIGHT; y++)
     {
         for(int x = 0; x < WIDTH; x++)
         {
-            int thispixel = y*WIDTH*4 + x*4;
+            int thispixel = y*WIDTH + x;
+            
+            Uint32 tp32 = get_pixel32(test_surf, thispixel);
+            Uint8 test_a, test_r, test_g, test_b;
+            SDL_GetRGBA(tp32, test_surf->format, &test_r, &test_g, &test_b, &test_a);
 
-            unsigned test_a = test_data[thispixel];
-            unsigned test_r = test_data[thispixel + 1];
-            unsigned test_g = test_data[thispixel + 2];
-            unsigned test_b = test_data[thispixel + 3];
-
-            unsigned goal_a = goal_data[thispixel];
-            unsigned goal_r = goal_data[thispixel + 1];
-            unsigned goal_g = goal_data[thispixel + 2];
-            unsigned goal_b = goal_data[thispixel + 3];
+            Uint32 gp32 = get_pixel32(goal_surf, thispixel);
+            Uint8 goal_a, goal_r, goal_g, goal_b;
+            SDL_GetRGBA(gp32, goal_surf->format, &goal_r, &goal_g, &goal_b, &goal_a);
 
             difference += (test_a - goal_a) * (test_a - goal_a);
             difference += (test_r - goal_r) * (test_r - goal_r);
@@ -254,17 +274,7 @@ unsigned long long difference(cairo_surface_t * test_surf, cairo_surface_t * goa
     return difference;
 }
 
-void copy_surf_to(cairo_surface_t * surf, cairo_t * cr)
-{
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, 0, 0, WIDTH, HEIGHT);
-    cairo_fill(cr);
-    //cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_surface(cr, surf, 0, 0);
-    cairo_paint(cr);
-}
-
-static void mainloop(cairo_surface_t * pngsurf)
+static void mainloop()
 {
     struct timeval start;
     gettimeofday(&start, NULL);
@@ -272,27 +282,16 @@ static void mainloop(cairo_surface_t * pngsurf)
     init_dna(dna_best);
     memcpy((void *)dna_test, (const void *)dna_best, sizeof(shape_t) * NUM_SHAPES);
 
-#ifdef SHOWWINDOW
-    cairo_surface_t * xsurf = cairo_xlib_surface_create(
-            dpy, pixmap, DefaultVisual(dpy, screen), WIDTH, HEIGHT);
-    cairo_t * xcr = cairo_create(xsurf);
-#endif
-
-    cairo_surface_t * test_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT);
-    cairo_t * test_cr = cairo_create(test_surf);
-
-    cairo_surface_t * goalsurf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT);
-    cairo_t * goalcr = cairo_create(goalsurf);
-    copy_surf_to(pngsurf, goalcr);
+    SDL_Texture* test_texture = SDL_CreateTexture(gRenderer, SDL_GetWindowPixelFormat(gWindow), SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
 
     unsigned long long lowestdiff = ULLONG_MAX;
     int teststep = 0;
     int beststep = 0;
     for(;;) {
         int other_mutated = mutate();
-        draw_dna(dna_test, test_cr);
+        draw_dna(dna_test, test_texture);
 
-        unsigned long long diff = difference(test_surf, goalsurf);
+        unsigned long long diff = difference(test_texture);
         if(diff < lowestdiff)
         {
             beststep++;
@@ -300,13 +299,6 @@ static void mainloop(cairo_surface_t * pngsurf)
             dna_best[mutated_shape] = dna_test[mutated_shape];
             if(other_mutated >= 0)
                 dna_best[other_mutated] = dna_test[other_mutated];
-#ifdef SHOWWINDOW
-            copy_surf_to(test_surf, xcr); // also copy to display
-            XCopyArea(dpy, pixmap, win, gc,
-                    0, 0,
-                    WIDTH, HEIGHT,
-                    0, 0);
-#endif
             lowestdiff = diff;
         }
         else
@@ -340,37 +332,99 @@ static void mainloop(cairo_surface_t * pngsurf)
                     beststep, teststep, ((MAX_FITNESS-lowestdiff) / (float)MAX_FITNESS)*100);
 #endif
 
-#ifdef SHOWWINDOW
-        if(teststep % 100 == 0 && XPending(dpy))
+        if(teststep % 100 == 0)
         {
-            XEvent xev;
-            XNextEvent(dpy, &xev);
-            switch(xev.type) {
-                case Expose:
-                    XCopyArea(dpy, pixmap, win, gc,
-                            xev.xexpose.x, xev.xexpose.y,
-                            xev.xexpose.width, xev.xexpose.height,
-                            xev.xexpose.x, xev.xexpose.y);
-            }
+            //Initialize renderer color
+            SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+
+            //Clear screen
+            SDL_RenderClear( gRenderer );
+            
+            //Render texture to screen
+            SDL_RenderCopy( gRenderer, test_texture, NULL, NULL );
+            
+            //Update screen
+            SDL_RenderPresent( gRenderer );
+            
+            
         }
-#endif
     }
 }
 
-int main(int argc, char ** argv) {
-    cairo_surface_t * pngsurf;
-    if(argc == 1)
-        pngsurf = cairo_image_surface_create_from_png("portrait.png");
-    else
-        pngsurf = cairo_image_surface_create_from_png(argv[1]);
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
-    WIDTH = cairo_image_surface_get_width(pngsurf);
-    HEIGHT = cairo_image_surface_get_height(pngsurf);
+int main(int argc, char ** argv) {
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        return 1;
+    }	// initialize SDL
+    
+    //Initialize PNG loading
+    int imgFlags = IMG_INIT_PNG;
+    if( !( IMG_Init( imgFlags ) & imgFlags ) )
+    {
+        printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError() );
+        return 1;
+    }
+
+
+    //Create window
+    gWindow = SDL_CreateWindow( "EvoLisa", 100, 100, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    if( gWindow == NULL )
+    {
+        printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+        return 1;
+    }
+
+    gRenderer = SDL_CreateRenderer( gWindow, -1, 0);
+    if( gRenderer == NULL )
+    {
+        printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+        return 1;
+    }
+
+    int numdrivers = SDL_GetNumRenderDrivers (); 
+    printf("Render driver count: \n");
+    for (int i=0; i<numdrivers; i++) { 
+        SDL_RendererInfo drinfo; 
+        SDL_GetRenderDriverInfo (i, &drinfo); 
+        printf("Driver name (%s): ", drinfo.name);
+        if (drinfo.flags & SDL_RENDERER_SOFTWARE) printf(" the renderer is a software fallback\n");
+        if (drinfo.flags & SDL_RENDERER_ACCELERATED) printf(" the renderer uses hardware acceleration\n");
+        if (drinfo.flags & SDL_RENDERER_PRESENTVSYNC) printf(" present is synchronized with the refresh rate\n");
+        if (drinfo.flags & SDL_RENDERER_TARGETTEXTURE) printf(" the renderer supports rendering to texture\n");
+    } 
+
+    
+    // TODO delete surface 
+    SDL_Surface *image = NULL;	// loaded image
+    const char * filename = (argc == 1 ? "portrait.png" : argv[1]);
+    image = IMG_Load(filename);	// open our file
+    if (image == NULL)
+    {
+        printf( "Image could not be loaded! SDL Error: %s\n", IMG_GetError() );
+        return 1;
+    }
+    
+    WIDTH = image->w;
+    HEIGHT = image->h;
+
+    //Create texture from surface pixels
+    gTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+    if( gTexture == NULL )
+    {
+        printf( "Unable to create texture from %s! SDL Error: %s\n", filename, SDL_GetError() );
+    }
+    SDL_UpdateTexture(gTexture, NULL, image->pixels, image->pitch);
+    SDL_FreeSurface(image);
 
     srandom(getpid() + time(NULL));
-#ifdef SHOWWINDOW
-    x_init();
-#endif
-    mainloop(pngsurf);
+    mainloop();
+    
+    SDL_DestroyWindow(gWindow);
+    SDL_Quit();
 }
 

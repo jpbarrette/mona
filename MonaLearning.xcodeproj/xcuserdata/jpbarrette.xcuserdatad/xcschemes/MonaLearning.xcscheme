@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D5719CDB1AFA54B10069A6A4"
-               BuildableName = "mona-c"
-               BlueprintName = "mona-c"
-               ReferencedContainer = "container:mona-c.xcodeproj">
+               BlueprintIdentifier = "D50159CC1AFDE45900D14268"
+               BuildableName = "MonaLearning"
+               BlueprintName = "MonaLearning"
+               ReferencedContainer = "container:MonaLearning.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -29,25 +29,36 @@
       buildConfiguration = "Debug">
       <Testables>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "D50159CC1AFDE45900D14268"
+            BuildableName = "MonaLearning"
+            BlueprintName = "MonaLearning"
+            ReferencedContainer = "container:MonaLearning.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </TestAction>
    <LaunchAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "NO"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "/Users/jpbarrette/Projects/mona-c"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D5719CDB1AFA54B10069A6A4"
-            BuildableName = "mona-c"
-            BlueprintName = "mona-c"
-            ReferencedContainer = "container:mona-c.xcodeproj">
+            BlueprintIdentifier = "D50159CC1AFDE45900D14268"
+            BuildableName = "MonaLearning"
+            BlueprintName = "MonaLearning"
+            ReferencedContainer = "container:MonaLearning.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -57,15 +68,16 @@
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D5719CDB1AFA54B10069A6A4"
-            BuildableName = "mona-c"
-            BlueprintName = "mona-c"
-            ReferencedContainer = "container:mona-c.xcodeproj">
+            BlueprintIdentifier = "D50159CC1AFDE45900D14268"
+            BuildableName = "MonaLearning"
+            BlueprintName = "MonaLearning"
+            ReferencedContainer = "container:MonaLearning.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
