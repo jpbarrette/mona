@@ -6,7 +6,7 @@
 #endif
 
 #ifndef NUM_SHAPES
-#define NUM_SHAPES 1
+#define NUM_SHAPES 40
 #endif
 
 typedef struct 

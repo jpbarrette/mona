@@ -43,7 +43,7 @@ void increment_color(dna_t* dna, unsigned idx, enum COLORS color, float incremen
 {
     for (unsigned i = 0; i < NUM_POINTS; ++i)
     {
-        dna->colors[idx][i][color] = CLAMP(dna->colors[idx][i][color] + increment, 0, 1.0f);
+        dna->colors[idx][i][color] = CLAMP(dna->colors[idx][i][color] + increment, -1.0f, 1.0f);
     }
 }
 
@@ -63,7 +63,7 @@ float get_color(dna_t* dna, unsigned idx, enum COLORS color)
 
 void increment_point(dna_t* dna, unsigned idx, unsigned point_i, enum POINTS point, float increment)
 {
-    dna->points[idx][point_i][point] = CLAMP(dna->points[idx][point_i][point] + increment, 0.f, 1.0f);
+    dna->points[idx][point_i][point] = CLAMP(dna->points[idx][point_i][point] + increment, -1.0f, 1.0f);
 }
 
 void set_point(dna_t* dna, unsigned idx, unsigned point_i, enum POINTS point, float val)
@@ -77,14 +77,14 @@ void init_dna(dna_t * dna)
     {
         for(int j = 0; j < NUM_POINTS; j++)
         {
-            dna->points[i][j][0] = RANDDOUBLE(1.0f);
-            dna->points[i][j][1] = RANDDOUBLE(1.0f);
+            dna->points[i][j][0] = RANDSIGNEDDOUBLE(1.0f);
+            dna->points[i][j][1] = RANDSIGNEDDOUBLE(1.0f);
         }
         
-        set_color(dna, i, COLORS_R, RANDDOUBLE(1));
-        set_color(dna, i, COLORS_G, RANDDOUBLE(1));
-        set_color(dna, i, COLORS_B, RANDDOUBLE(1));
-        set_color(dna, i, COLORS_A, RANDDOUBLE(1));
+        set_color(dna, i, COLORS_R, RANDSIGNEDDOUBLE(1));
+        set_color(dna, i, COLORS_G, RANDSIGNEDDOUBLE(1));
+        set_color(dna, i, COLORS_B, RANDSIGNEDDOUBLE(1));
+        set_color(dna, i, COLORS_A, RANDSIGNEDDOUBLE(1));
     }
 }
 
@@ -137,14 +137,14 @@ void mutate(dna_t* dna_test)
             if(drastic < 1)
                 increment_point(dna_test, mutated_shape, point_i, POINTS_X, RANDSIGNEDDOUBLE(0.1f));
             else
-                set_point(dna_test, mutated_shape, point_i, POINTS_X, RANDDOUBLE(1.0f));
+                set_point(dna_test, mutated_shape, point_i, POINTS_X, RANDSIGNEDDOUBLE(1.0f));
         }
         else
         {
             if(drastic < 1)
                 increment_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDSIGNEDDOUBLE(0.1f));
             else
-                set_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDDOUBLE(1.0f));
+                set_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDSIGNEDDOUBLE(1.0f));
         }
     }
 
@@ -227,7 +227,7 @@ void mainloop()
         float* test_surface = NULL;
         float* goal_surface = NULL;
         unsigned long long diff = difference(test_surface, goal_surface);
-        if(diff < lowestdiff)
+        if(diff <= lowestdiff)
         {
             beststep++;
             // test is good, copy to best

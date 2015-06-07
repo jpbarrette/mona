@@ -53,7 +53,7 @@ const char* read_file(const char* filename)
     return (const char*)buffer;
 }
 
-void init_draw(dna_t* dna)
+void init_draw()
 {
     int params = -1;
 
@@ -188,6 +188,7 @@ int main(int argc, char ** argv)
     glEnable (GL_DEPTH_TEST); // enable depth-testing
     glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
 
+    init_draw();
     mainloop();
 }
 
