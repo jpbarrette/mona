@@ -8,11 +8,32 @@
 
 #include "mona.h"
 
+#define WIDTH 800
+#define HEIGHT 600
+
 GLuint vao = 0;
 GLuint points_vbo = 0;
 GLuint colors_vbo = 0;
 GLuint shader_programme = 0;
 GLFWwindow* g_window = NULL;
+
+/* print errors in shader compilation */
+void _print_shader_info_log (GLuint shader_index) {
+	int max_length = 2048;
+	int actual_length = 0;
+	char log[2048];
+	glGetShaderInfoLog (shader_index, max_length, &actual_length, log);
+	printf ("shader info log for GL index %i:\n%s\n", shader_index, log);
+}
+
+/* print errors in shader linking */
+void _print_programme_info_log (GLuint sp) {
+	int max_length = 2048;
+	int actual_length = 0;
+	char log[2048];
+	glGetProgramInfoLog (sp, max_length, &actual_length, log);
+	printf ("program info log for GL index %i:\n%s", sp, log);
+}
 
 const char* read_file(const char* filename)
 {
@@ -34,6 +55,8 @@ const char* read_file(const char* filename)
 
 void init_draw(dna_t* dna)
 {
+    int params = -1;
+
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &points_vbo);
     glGenBuffers(1, &colors_vbo);
@@ -45,14 +68,44 @@ void init_draw(dna_t* dna)
         GLuint vs = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vs, 1, &vertex_shader, NULL);
         glCompileShader(vs);
+
+	/* check for shader compile errors - very important! */
+	glGetShaderiv (vs, GL_COMPILE_STATUS, &params);
+	if (GL_TRUE != params) {
+            fprintf (stderr, "ERROR: GL shader index %i did not compile\n", vs);
+            _print_shader_info_log (vs);
+            exit(1); /* or exit or something */
+	}
+
         GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fs, 1, &fragment_shader, NULL);
         glCompileShader(fs);
+
+	/* check for compile errors */
+	glGetShaderiv (fs, GL_COMPILE_STATUS, &params);
+	if (GL_TRUE != params) {
+            fprintf (stderr, "ERROR: GL shader index %i did not compile\n", fs);
+            _print_shader_info_log (fs);
+            exit(1); /* or exit or something */
+	}
         
         shader_programme = glCreateProgram();
         glAttachShader(shader_programme, fs);
         glAttachShader(shader_programme, vs);
         glLinkProgram(shader_programme);
+
+	/* check for shader linking errors - very important! */
+	glGetProgramiv (shader_programme, GL_LINK_STATUS, &params);
+	if (GL_TRUE != params) {
+            fprintf (
+                stderr,
+                "ERROR: could not link shader programme GL index %i\n",
+                shader_programme
+		);
+            _print_programme_info_log (shader_programme);
+            exit(1);
+	}
+
     }
 
     glEnable (GL_CULL_FACE); // cull face
@@ -62,8 +115,9 @@ void init_draw(dna_t* dna)
 
 void draw_dna(dna_t * dna)
 {
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport (0, 0, WIDTH, HEIGHT);
+    glClearColor(0.5, 0.5, 0.5, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glViewport (0, 0, WIDTH, HEIGHT);
     
     glUseProgram(shader_programme);
     

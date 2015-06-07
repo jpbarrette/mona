@@ -23,8 +23,7 @@ extern void draw_dna(dna_t * dna);
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : \
                               (val) > (max) ? (max) : (val))
 
-#define WIDTH 800
-#define HEIGHT 600
+
 
 enum COLORS
 {
@@ -64,7 +63,7 @@ float get_color(dna_t* dna, unsigned idx, enum COLORS color)
 
 void increment_point(dna_t* dna, unsigned idx, unsigned point_i, enum POINTS point, float increment)
 {
-    dna->points[idx][point_i][point] = CLAMP(dna->points[idx][point_i][point] + increment, 0, WIDTH-1);
+    dna->points[idx][point_i][point] = CLAMP(dna->points[idx][point_i][point] + increment, 0.f, 1.0f);
 }
 
 void set_point(dna_t* dna, unsigned idx, unsigned point_i, enum POINTS point, float val)
@@ -78,8 +77,8 @@ void init_dna(dna_t * dna)
     {
         for(int j = 0; j < NUM_POINTS; j++)
         {
-            dna->points[i][j][0] = RANDDOUBLE(WIDTH);
-            dna->points[i][j][1] = RANDDOUBLE(HEIGHT);
+            dna->points[i][j][0] = RANDDOUBLE(1.0f);
+            dna->points[i][j][1] = RANDDOUBLE(1.0f);
         }
         
         set_color(dna, i, COLORS_R, RANDDOUBLE(1));
@@ -136,16 +135,16 @@ void mutate(dna_t* dna_test)
         if(roulette<1.5)
         {
             if(drastic < 1)
-                increment_point(dna_test, mutated_shape, point_i, POINTS_X, RANDSIGNEDDOUBLE(WIDTH/10.0));
+                increment_point(dna_test, mutated_shape, point_i, POINTS_X, RANDSIGNEDDOUBLE(0.1f));
             else
-                set_point(dna_test, mutated_shape, point_i, POINTS_X, RANDDOUBLE(WIDTH));
+                set_point(dna_test, mutated_shape, point_i, POINTS_X, RANDDOUBLE(1.0f));
         }
         else
         {
             if(drastic < 1)
-                increment_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDSIGNEDDOUBLE(WIDTH/10.0));
+                increment_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDSIGNEDDOUBLE(0.1f));
             else
-                set_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDDOUBLE(WIDTH));
+                set_point(dna_test, mutated_shape, point_i, POINTS_Y, RANDDOUBLE(1.0f));
         }
     }
 
@@ -175,6 +174,8 @@ unsigned char * goal_data = NULL;
 unsigned long long difference(float* test_surface, float* goal_surface)
 {
     return 100000;
+
+#if 0
     unsigned long long difference = 0;
 
     for(int y = 0; y < HEIGHT; y++)
@@ -201,6 +202,7 @@ unsigned long long difference(float* test_surface, float* goal_surface)
     }
 
     return difference;
+#endif
 }
 
 

@@ -6,12 +6,8 @@
 #endif
 
 #ifndef NUM_SHAPES
-#define NUM_SHAPES 40
+#define NUM_SHAPES 1
 #endif
-
-#define WIDTH 800
-#define HEIGHT 600
-
 
 typedef struct 
 {
