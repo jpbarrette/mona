@@ -14,6 +14,7 @@
 		D531A7351B22E3EA003C29EC /* libGLEW.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D531A7331B22E3EA003C29EC /* libGLEW.a */; };
 		D531A7361B22E3EA003C29EC /* libglfw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D531A7341B22E3EA003C29EC /* libglfw3.a */; };
 		D531A7381B22E496003C29EC /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D531A7371B22E496003C29EC /* IOKit.framework */; };
+		D531A73B1B24808D003C29EC /* stb_image.c in Sources */ = {isa = PBXBuildFile; fileRef = D531A7391B24808D003C29EC /* stb_image.c */; };
 		D5AE41751AFDE52800EE740D /* mona.c in Sources */ = {isa = PBXBuildFile; fileRef = D5AE41741AFDE52800EE740D /* mona.c */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +41,8 @@
 		D531A7331B22E3EA003C29EC /* libGLEW.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGLEW.a; path = common/osx_64/libGLEW.a; sourceTree = "<group>"; };
 		D531A7341B22E3EA003C29EC /* libglfw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglfw3.a; path = common/osx_64/libglfw3.a; sourceTree = "<group>"; };
 		D531A7371B22E496003C29EC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		D531A7391B24808D003C29EC /* stb_image.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stb_image.c; sourceTree = SOURCE_ROOT; };
+		D531A73A1B24808D003C29EC /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = SOURCE_ROOT; };
 		D5AE41741AFDE52800EE740D /* mona.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mona.c; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -86,6 +89,8 @@
 		D50159CF1AFDE45900D14268 /* MonaLearning */ = {
 			isa = PBXGroup;
 			children = (
+				D531A7391B24808D003C29EC /* stb_image.c */,
+				D531A73A1B24808D003C29EC /* stb_image.h */,
 				D531A7321B22DF1F003C29EC /* mona.h */,
 				D531A7251B22D382003C29EC /* main.c */,
 				D5AE41741AFDE52800EE740D /* mona.c */,
@@ -151,6 +156,7 @@
 			files = (
 				D531A7261B22D382003C29EC /* main.c in Sources */,
 				D5AE41751AFDE52800EE740D /* mona.c in Sources */,
+				D531A73B1B24808D003C29EC /* stb_image.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

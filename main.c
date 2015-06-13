@@ -7,15 +7,14 @@
 #include <stdlib.h>
 
 #include "mona.h"
-
-#define WIDTH 800
-#define HEIGHT 600
+#include "stb_image.h"
 
 GLuint vao = 0;
 GLuint points_vbo = 0;
 GLuint colors_vbo = 0;
 GLuint shader_programme = 0;
 GLFWwindow* g_window = NULL;
+unsigned char* g_goal_surface = NULL;
 
 /* print errors in shader compilation */
 void _print_shader_info_log (GLuint shader_index) {
@@ -51,6 +50,42 @@ const char* read_file(const char* filename)
 
     fclose(fp);
     return (const char*)buffer;
+}
+
+unsigned char* load_texture (const char* file_name, int* width, int* height)
+{
+    int n;
+    int force_channels = 4;
+    unsigned char* image_data = (unsigned char*)stbi_loadf (file_name, width, height, &n, force_channels);
+    if (!image_data) {
+        fprintf (stderr, "ERROR: could not load %s\n", file_name);
+        return NULL;
+    }
+
+    int width_in_bytes = *width * 4;
+    unsigned char *top = NULL;
+    unsigned char *bottom = NULL;
+    unsigned char temp = 0;
+    int half_height = *height / 2;
+    
+    for (int row = 0; row < half_height; row++) {
+        top = image_data + row * width_in_bytes;
+        bottom = image_data + (*height - row - 1) * width_in_bytes;
+        for (int col = 0; col < width_in_bytes; col++) {
+            temp = *top;
+            *top = *bottom;
+            *bottom = temp;
+            top++;
+            bottom++;
+        }
+    }
+
+    return image_data;
+}
+
+void gl_difference()
+{
+
 }
 
 void init_draw()
@@ -151,6 +186,10 @@ void draw_dna(dna_t * dna)
 
 int main(int argc, char ** argv) 
 {
+    int width = 0;
+    int height = 0;
+    g_goal_surface = load_texture("portrait.png", &width, &height);
+
     // start GL context and O/S window using the GLFW helper library
     if (!glfwInit ()) 
     {
@@ -166,7 +205,7 @@ int main(int argc, char ** argv)
     glfwWindowHint (GLFW_SAMPLES, 4);
 #endif // __APPLE__
 
-    g_window = glfwCreateWindow (WIDTH, HEIGHT, "EvoLearning", NULL, NULL);
+    g_window = glfwCreateWindow (width, height, "EvoLearning", NULL, NULL);
     if (!g_window) {
         fprintf (stderr, "ERROR: could not open window with GLFW3\n");
         glfwTerminate();

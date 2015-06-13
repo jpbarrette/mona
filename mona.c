@@ -15,6 +15,7 @@
 #include "mona_draw.h"
 
 extern void draw_dna(dna_t * dna);
+extern void gl_difference();
 
 #define RANDINT(max) (int)((random() / (double)RAND_MAX) * (max))
 #define RANDDOUBLE(max) ((random() / (double)RAND_MAX) * max)
