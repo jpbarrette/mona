@@ -25,3 +25,9 @@ CMakeCache.txt
 Makefile
 
 *.swp
+
+.#main.c
+
+#main.c#
+
+#main.c#

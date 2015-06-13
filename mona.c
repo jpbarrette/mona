@@ -227,6 +227,9 @@ void mainloop()
 
         float* test_surface = NULL;
         float* goal_surface = NULL;
+
+        draw_dna(&dna_test);
+
         unsigned long long diff = difference(test_surface, goal_surface);
         if(diff <= lowestdiff)
         {
@@ -263,8 +266,6 @@ void mainloop()
             printf("Step = %d/%d\nFitness = %0.6f%%\n",
                     beststep, teststep, ((MAX_FITNESS-lowestdiff) / (float)MAX_FITNESS)*100);
 #endif
-
-        draw_dna(&dna_test);
     }
 }
 

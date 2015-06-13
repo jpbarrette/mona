@@ -13,6 +13,13 @@ GLuint vao = 0;
 GLuint points_vbo = 0;
 GLuint colors_vbo = 0;
 GLuint shader_programme = 0;
+GLuint g_rboColor = 0;
+GLuint g_rboDepth = 0;
+GLuint g_framebuffer = 0;
+int g_width = 0;
+int g_height = 0;
+
+
 GLFWwindow* g_window = NULL;
 unsigned char* g_goal_surface = NULL;
 
@@ -143,16 +150,91 @@ void init_draw()
 
     }
 
-    glEnable (GL_CULL_FACE); // cull face
-    glCullFace (GL_BACK); // cull back face
-    glFrontFace (GL_CW); // GL_CCW for counter clock-wise
+    // Frame buffer init
+    {
+        // Color renderbuffer.
+        glGenRenderbuffers(1,&g_rboColor);
+        glBindRenderbuffer(GL_RENDERBUFFER, g_rboColor);
+        // Set storage for currently bound renderbuffer.
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, g_width, g_height);
+
+        // Depth renderbuffer
+        glGenRenderbuffers(1,&g_rboDepth);
+        glBindRenderbuffer(GL_RENDERBUFFER, g_rboDepth);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, g_width, g_height);
+
+        // Framebuffer
+        glGenFramebuffers(1, &g_framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER,g_framebuffer);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, g_rboColor);
+        // Set renderbuffers for currently bound framebuffer
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g_rboDepth);
+
+        // Set to write to the framebuffer.
+        glBindFramebuffer(GL_FRAMEBUFFER,g_framebuffer);
+
+        // Tell glReadPixels where to read from.
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) 
+        {
+            fprintf(stderr, "framebuffer error:");
+            switch (status) {
+                case GL_FRAMEBUFFER_UNDEFINED:
+                    fprintf(stderr, "GL_FRAMEBUFFER_UNDEFINED");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
+                break;
+
+                case GL_FRAMEBUFFER_UNSUPPORTED:
+                    fprintf(stderr, "GL_FRAMEBUFFER_UNSUPPORTED");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+                break;
+
+                case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                    fprintf(stderr, "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+                break;
+
+                case 0:
+                    fprintf(stderr, "0");
+                break;
+            }
+            exit(1);
+        }
+    }
+
+    // TODO enable culling, but when we know that triangles met front facing requirements
+    
+    //glEnable (GL_CULL_FACE); // cull face
+    //glCullFace (GL_BACK); // cull back face
+    //glFrontFace (GL_CW); // GL_CCW for counter clock-wise
 }
 
 void draw_dna(dna_t * dna)
 {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, g_framebuffer);
+
     glClearColor(0.5, 0.5, 0.5, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //glViewport (0, 0, WIDTH, HEIGHT);
+    glViewport(0, 0, g_width, g_height);
     
     glUseProgram(shader_programme);
     
@@ -172,10 +254,31 @@ void draw_dna(dna_t * dna)
     if (GLFW_PRESS == glfwGetKey (g_window, GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose (g_window, 1);
     }
+
     // put the stuff we've been drawing onto the display
     glDrawArrays (GL_TRIANGLES, 0, NUM_SHAPES*NUM_POINTS);
 
-    glfwSwapBuffers(g_window);
+    // TODO, are we getting the last one?
+    glFinish();
+    
+    static double lastTime = 0;
+    double currentTime = glfwGetTime();
+    if ( currentTime - lastTime >= 1.0 )
+    { 
+        // If last prinf() was more than 1 sec ago
+        lastTime = currentTime;
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, g_framebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        glClearColor(0.5, 0.5, 0.5, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, g_width, g_height);
+
+        glBlitFramebuffer(0, 0, g_width, g_height, 0, 0, g_width, g_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        glfwSwapBuffers(g_window);
+    }
 
     if (glfwWindowShouldClose (g_window))
     {
@@ -186,9 +289,7 @@ void draw_dna(dna_t * dna)
 
 int main(int argc, char ** argv) 
 {
-    int width = 0;
-    int height = 0;
-    g_goal_surface = load_texture("portrait.png", &width, &height);
+    g_goal_surface = load_texture("portrait.png", &g_width, &g_height);
 
     // start GL context and O/S window using the GLFW helper library
     if (!glfwInit ()) 
@@ -205,7 +306,7 @@ int main(int argc, char ** argv)
     glfwWindowHint (GLFW_SAMPLES, 4);
 #endif // __APPLE__
 
-    g_window = glfwCreateWindow (width, height, "EvoLearning", NULL, NULL);
+    g_window = glfwCreateWindow (g_width, g_height, "EvoLearning", NULL, NULL);
     if (!g_window) {
         fprintf (stderr, "ERROR: could not open window with GLFW3\n");
         glfwTerminate();
