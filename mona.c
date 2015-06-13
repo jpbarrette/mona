@@ -15,7 +15,7 @@
 #include "mona_draw.h"
 
 extern void draw_dna(dna_t * dna);
-extern void gl_difference();
+extern unsigned long long gl_difference();
 
 #define RANDINT(max) (int)((random() / (double)RAND_MAX) * (max))
 #define RANDDOUBLE(max) ((random() / (double)RAND_MAX) * max)
@@ -172,30 +172,27 @@ unsigned MAX_FITNESS = UINT_MAX;
 
 unsigned char * goal_data = NULL;
 
-unsigned long long difference(float* test_surface, float* goal_surface)
+unsigned long long difference(unsigned width, unsigned height, unsigned char * test_surface, unsigned char * goal_surface)
 {
-    return 100000;
-
-#if 0
     unsigned long long difference = 0;
 
-    for(int y = 0; y < HEIGHT; y++)
+    for(int y = 0; y < height; y++)
     {
-        for(int x = 0; x < WIDTH; x++)
+        for(int x = 0; x < width; x++)
         {
-            int p = (y*WIDTH + x) * 4;
+            int p = (y*width + x) * 4;
             
             float test_r = test_surface[p];
             float test_g = test_surface[p + 1];
             float test_b = test_surface[p + 2];
-            float test_a = test_surface[p + 3];
+            //float test_a = test_surface[p + 3];
 
             float goal_r = goal_surface[p];
             float goal_g = goal_surface[p + 1];
             float goal_b = goal_surface[p + 2];
-            float goal_a = goal_surface[p + 3];
+            //float goal_a = goal_surface[p + 3];
             
-            difference += (test_a - goal_a) * (test_a - goal_a);
+            //difference += (test_a - goal_a) * (test_a - goal_a);
             difference += (test_r - goal_r) * (test_r - goal_r);
             difference += (test_g - goal_g) * (test_g - goal_g);
             difference += (test_b - goal_b) * (test_b - goal_b);
@@ -203,7 +200,6 @@ unsigned long long difference(float* test_surface, float* goal_surface)
     }
 
     return difference;
-#endif
 }
 
 
@@ -225,13 +221,10 @@ void mainloop()
     for(;;) {
         mutate(&dna_test);
 
-        float* test_surface = NULL;
-        float* goal_surface = NULL;
-
         draw_dna(&dna_test);
 
-        unsigned long long diff = difference(test_surface, goal_surface);
-        if(diff <= lowestdiff)
+        unsigned long long diff = gl_difference();
+        if(diff < lowestdiff)
         {
             beststep++;
             // test is good, copy to best

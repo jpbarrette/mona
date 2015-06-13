@@ -9,6 +9,11 @@
 #include "mona.h"
 #include "stb_image.h"
 
+GLuint g_goal_display_vao = 0;
+GLuint g_goal_display_vbo = 0;
+GLuint g_goal_display_ebo = 0;
+GLuint g_goal_display_program = 0;
+
 GLuint vao = 0;
 GLuint points_vbo = 0;
 GLuint colors_vbo = 0;
@@ -18,10 +23,12 @@ GLuint g_rboDepth = 0;
 GLuint g_framebuffer = 0;
 int g_width = 0;
 int g_height = 0;
+GLuint g_goal_texture = 0;
 
 
 GLFWwindow* g_window = NULL;
 unsigned char* g_goal_surface = NULL;
+unsigned char* g_test_surface = NULL;
 
 /* print errors in shader compilation */
 void _print_shader_info_log (GLuint shader_index) {
@@ -62,8 +69,9 @@ const char* read_file(const char* filename)
 unsigned char* load_texture (const char* file_name, int* width, int* height)
 {
     int n;
-    int force_channels = 4;
-    unsigned char* image_data = (unsigned char*)stbi_loadf (file_name, width, height, &n, force_channels);
+
+    // TODO: use SOIL instead?
+    unsigned char* image_data = (unsigned char*)stbi_load(file_name, width, height, &n, STBI_rgb_alpha);
     if (!image_data) {
         fprintf (stderr, "ERROR: could not load %s\n", file_name);
         return NULL;
@@ -87,13 +95,238 @@ unsigned char* load_texture (const char* file_name, int* width, int* height)
         }
     }
 
+    // TODO delete image_data
     return image_data;
 }
 
-void gl_difference()
+unsigned long long gl_difference()
 {
+    glReadPixels(0, 0, g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, g_test_surface);
 
+    return difference(g_width, g_height, g_test_surface, g_goal_surface);
 }
+
+const char* GL_type_to_string (GLenum type) {
+  switch (type) {
+    case GL_BOOL: return "bool";
+    case GL_INT: return "int";
+    case GL_FLOAT: return "float";
+    case GL_FLOAT_VEC2: return "vec2";
+    case GL_FLOAT_VEC3: return "vec3";
+    case GL_FLOAT_VEC4: return "vec4";
+    case GL_FLOAT_MAT2: return "mat2";
+    case GL_FLOAT_MAT3: return "mat3";
+    case GL_FLOAT_MAT4: return "mat4";
+    case GL_SAMPLER_2D: return "sampler2D";
+    case GL_SAMPLER_3D: return "sampler3D";
+    case GL_SAMPLER_CUBE: return "samplerCube";
+    case GL_SAMPLER_2D_SHADOW: return "sampler2DShadow";
+    default: break;
+  }
+  return "other";
+}
+
+
+/* print absolutely everything about a shader - only useful if you get really
+stuck wondering why a shader isn't working properly */
+void print_all (GLuint sp) {
+	int params = -1;
+	int i;
+
+	printf ("--------------------\nshader programme %i info:\n", sp);
+	glGetProgramiv (sp, GL_LINK_STATUS, &params);
+	printf ("GL_LINK_STATUS = %i\n", params);
+	
+	glGetProgramiv (sp, GL_ATTACHED_SHADERS, &params);
+	printf ("GL_ATTACHED_SHADERS = %i\n", params);
+	
+	glGetProgramiv (sp, GL_ACTIVE_ATTRIBUTES, &params);
+	printf ("GL_ACTIVE_ATTRIBUTES = %i\n", params);
+	
+	for (i = 0; i < params; i++) {
+		char name[64];
+		int max_length = 64;
+		int actual_length = 0;
+		int size = 0;
+		GLenum type;
+		glGetActiveAttrib (sp, i, max_length, &actual_length, &size, &type, name);
+		if (size > 1) {
+			int j;
+			for (j = 0; j < size; j++) {
+				char long_name[64];
+				int location;
+
+				sprintf (long_name, "%s[%i]", name, j);
+				location = glGetAttribLocation (sp, long_name);
+				printf ("  %i) type:%s name:%s location:%i\n",
+					i, GL_type_to_string (type), long_name, location);
+			}
+		} else {
+			int location = glGetAttribLocation (sp, name);
+			printf ("  %i) type:%s name:%s location:%i\n",
+				i, GL_type_to_string (type), name, location);
+		}
+	}
+	
+	glGetProgramiv (sp, GL_ACTIVE_UNIFORMS, &params);
+	printf ("GL_ACTIVE_UNIFORMS = %i\n", params);
+	for (i = 0; i < params; i++) {
+		char name[64];
+		int max_length = 64;
+		int actual_length = 0;
+		int size = 0;
+		GLenum type;
+		glGetActiveUniform (sp, i, max_length, &actual_length, &size, &type, name);
+		if (size > 1) {
+			int j;
+			for (j = 0; j < size; j++) {
+				char long_name[64];
+				int location;
+
+				sprintf (long_name, "%s[%i]", name, j);
+				location = glGetUniformLocation (sp, long_name);
+				printf ("  %i) type:%s name:%s location:%i\n",
+					i, GL_type_to_string (type), long_name, location);
+			}
+		} else {
+			int location = glGetUniformLocation (sp, name);
+			printf ("  %i) type:%s name:%s location:%i\n",
+				i, GL_type_to_string (type), name, location);
+		}
+	}
+	
+	_print_programme_info_log (sp);
+}
+
+
+void init_goal_draw()
+{
+    // Create Vertex Array Object
+    glGenVertexArrays(1, &g_goal_display_vao);
+    glBindVertexArray(g_goal_display_vao);
+
+    // Create a Vertex Buffer Object and copy the vertex data to it
+    glGenBuffers(1, &g_goal_display_vbo);
+
+    GLfloat vertices[] = {
+        //  Position  Texcoords
+        -1.0f,  1.0f, 0.0f, 0.0f, // Top-left
+         1.0f,  1.0f, 1.0f, 0.0f, // Top-right
+         1.0f, -1.0f, 1.0f, 1.0f, // Bottom-right
+        -1.0f, -1.0f, 0.0f, 1.0f  // Bottom-left
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, g_goal_display_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Create an element array 
+    {
+        glGenBuffers(1, &g_goal_display_ebo);
+        GLuint elements[] = {
+            0, 1, 2,
+            2, 3, 0
+        };
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_goal_display_ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+    }
+
+    // TODO free up *_source
+
+    // Create and compile the vertex shader
+    int params = -1;
+
+    const char* vertex_shader_source = read_file("goal_vs.glsl");
+    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
+    glCompileShader(vertex_shader);
+
+    /* check for shader compile errors - very important! */
+    glGetShaderiv (vertex_shader, GL_COMPILE_STATUS, &params);
+    if (GL_TRUE != params) {
+        fprintf (stderr, "ERROR: GL shader index %i did not compile\n", vertex_shader);
+        _print_shader_info_log (vertex_shader);
+        exit(1); /* or exit or something */
+    }
+    _print_shader_info_log (vertex_shader);
+
+    
+    // Create and compile the fragment shader
+    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    const char* fragment_shader_source = read_file("goal_fs.glsl");
+    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
+    glCompileShader(fragment_shader);
+
+    /* check for compile errors */
+    glGetShaderiv (fragment_shader, GL_COMPILE_STATUS, &params);
+    if (GL_TRUE != params) {
+        fprintf (stderr, "ERROR: GL shader index %i did not compile\n", fragment_shader);
+        _print_shader_info_log (fragment_shader);
+        exit(1); /* or exit or something */
+    }
+    _print_shader_info_log (fragment_shader);
+
+    // Link the vertex and fragment shader into a shader program
+    g_goal_display_program = glCreateProgram();
+    glAttachShader(g_goal_display_program, vertex_shader);
+    glAttachShader(g_goal_display_program, fragment_shader);
+    glBindFragDataLocation(g_goal_display_program, 0, "outColor");
+    glLinkProgram(g_goal_display_program);
+
+    print_all(g_goal_display_program);
+
+    /* check for shader linking errors - very important! */
+    glGetProgramiv (g_goal_display_program, GL_LINK_STATUS, &params);
+    if (GL_TRUE != params) {
+        fprintf (
+            stderr,
+            "ERROR: could not link shader programme GL index %i\n",
+            g_goal_display_program
+            );
+        _print_programme_info_log (g_goal_display_program);
+        exit(1);
+    }
+
+    // Specify the layout of the vertex data
+    GLint pos_attrib = glGetAttribLocation(g_goal_display_program, "position");
+    if (pos_attrib == GL_INVALID_OPERATION)
+    {
+        fprintf(stderr, "Could not get 'position' attribute location");
+        exit(1);
+    }
+
+    glEnableVertexAttribArray(pos_attrib);
+    glVertexAttribPointer(pos_attrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+
+    GLint tex_attrib = glGetAttribLocation(g_goal_display_program, "texcoord");
+    if (tex_attrib == GL_INVALID_OPERATION)
+    {
+        fprintf(stderr, "Could not get 'texcoord' attribute location");
+        exit(1);
+    }
+    glEnableVertexAttribArray(tex_attrib);
+    glVertexAttribPointer(tex_attrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+
+    // Load textures
+    {
+        GLuint texture;
+        glGenTextures(1, &texture);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_width, g_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, g_goal_surface);
+        // TODO: don't understand this part
+        //glUniform1i(glGetUniformLocation(g_goal_display_program, "texGoal"), 0);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+}
+
+
 
 void init_draw()
 {
@@ -258,8 +491,10 @@ void draw_dna(dna_t * dna)
     // put the stuff we've been drawing onto the display
     glDrawArrays (GL_TRIANGLES, 0, NUM_SHAPES*NUM_POINTS);
 
-    // TODO, are we getting the last one?
     glFinish();
+
+    
+    
     
     static double lastTime = 0;
     double currentTime = glfwGetTime();
@@ -268,16 +503,42 @@ void draw_dna(dna_t * dna)
         // If last prinf() was more than 1 sec ago
         lastTime = currentTime;
 
+        glUseProgram(g_goal_display_program);
+
+        glBindVertexArray (g_goal_display_vao);
+
         glBindFramebuffer(GL_READ_FRAMEBUFFER, g_framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
         glClearColor(0.5, 0.5, 0.5, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, g_width, g_height);
-
         glBlitFramebuffer(0, 0, g_width, g_height, 0, 0, g_width, g_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+        // Draw a rectangle from the 2 triangles using 6 indices
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
         glfwSwapBuffers(g_window);
+
+
+
+        // Drawing goal surface (need init_goal_draw)
+        //
+        /* glUseProgram(g_goal_display_program); */
+
+        /* glBindVertexArray (g_goal_display_vao); */
+
+        /* glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); */
+
+        /* glClearColor(0.5, 0.5, 0.5, 1.f); */
+        /* glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); */
+        /* glViewport(0, 0, g_width, g_height); */
+
+        /* // Draw a rectangle from the 2 triangles using 6 indices */
+        /* glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); */
+
+        /* glfwSwapBuffers(g_window); */
+
     }
 
     if (glfwWindowShouldClose (g_window))
@@ -289,7 +550,9 @@ void draw_dna(dna_t * dna)
 
 int main(int argc, char ** argv) 
 {
-    g_goal_surface = load_texture("portrait.png", &g_width, &g_height);
+    // Need this at the beginning of program to determine window's width and height
+    g_goal_surface = load_texture("mona.png", &g_width, &g_height);
+    g_test_surface = (unsigned char*)malloc(g_width * g_height * 4);
 
     // start GL context and O/S window using the GLFW helper library
     if (!glfwInit ()) 
@@ -329,6 +592,7 @@ int main(int argc, char ** argv)
     glDepthFunc (GL_LESS); // depth-testing interprets a smaller value as "closer"
 
     init_draw();
+    //init_goal_draw();
     mainloop();
 }
 

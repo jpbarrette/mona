@@ -16,6 +16,7 @@ typedef struct
     float colors[NUM_SHAPES][NUM_POINTS][4];
 } dna_t;
 
+unsigned long long difference(unsigned width, unsigned height, unsigned char * test_surface, unsigned char * goal_surface);
 void mainloop();
 
 #endif // __MONA_C_MONA_H__
