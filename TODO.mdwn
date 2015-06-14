@@ -1,1 +1,10 @@
+OpenGL related:
+* There's seem to have a problem with the fitness function
+* Let's have a step-by-step iteration (keyboard driven) (show what are the differences)
+* Figure out how to profile
 * Have render the scene while trying another iteration (from father or current)?
+* Check if removing a triangle gives the same fitness, then accept that new mutation
+* Render test and goal images side to side
+
+Algo related:
+* Have unvisible triangles been removed. We need to add them in areas where we need more details. (splitting already existing triangles?)

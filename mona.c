@@ -182,17 +182,17 @@ unsigned long long difference(unsigned width, unsigned height, unsigned char * t
         {
             int p = (y*width + x) * 4;
             
-            float test_r = test_surface[p];
-            float test_g = test_surface[p + 1];
-            float test_b = test_surface[p + 2];
-            //float test_a = test_surface[p + 3];
+            unsigned char test_r = test_surface[p];
+            unsigned char test_g = test_surface[p + 1];
+            unsigned char test_b = test_surface[p + 2];
+            unsigned char test_a = test_surface[p + 3];
 
-            float goal_r = goal_surface[p];
-            float goal_g = goal_surface[p + 1];
-            float goal_b = goal_surface[p + 2];
-            //float goal_a = goal_surface[p + 3];
+            unsigned char goal_r = goal_surface[p];
+            unsigned char goal_g = goal_surface[p + 1];
+            unsigned char goal_b = goal_surface[p + 2];
+            unsigned char goal_a = goal_surface[p + 3];
             
-            //difference += (test_a - goal_a) * (test_a - goal_a);
+            difference += (test_a - goal_a) * (test_a - goal_a);
             difference += (test_r - goal_r) * (test_r - goal_r);
             difference += (test_g - goal_g) * (test_g - goal_g);
             difference += (test_b - goal_b) * (test_b - goal_b);
