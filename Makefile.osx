@@ -1,2 +1,0 @@
-all:
-	g++ -framework Cocoa -framework OpenGL -framework IOKit -I../common/include -I/sw/include -L../common/osx_64 -o demo main.cpp ../common/osx_64/libGLEW.a ../common/osx_64/libglfw3.a

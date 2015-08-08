@@ -12,12 +12,16 @@ portrait.png
 
 portrait.xcf
 
-*.cmake
-
 CMakeFiles/*
 CMakeScripts/*
+src/CMakeScripts/*
+src/CMakeFiles/*
+src/Debug/*
 mona.build/*
 mona.xcodeproj/*
+MonaLearning.build/*
+src/MonaLearning.build/*
+MonaLearning.xcodeproj/*
 CMakeCache.txt
 Makefile
 
@@ -27,3 +31,7 @@ Makefile
 
 
 *.c#
+
+src/cmake_install.cmake
+
+cmake_install.cmake

@@ -393,7 +393,7 @@ void draw_dna(dna_t * dna)
 int main(int argc, char ** argv) 
 {
     // Need this at the beginning of program to determine window's width and height
-    g_goal_surface = load_texture("mona.png", &g_width, &g_height);
+    g_goal_surface = load_texture("data/mona.png", &g_width, &g_height);
     g_test_surface = (unsigned char*)malloc(g_width * g_height * 4);
 
     // start GL context and O/S window using the GLFW helper library
