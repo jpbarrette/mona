@@ -1,7 +1,9 @@
 OpenGL related:
+* Alpha channel doesn't seem to be taken into consideration when rendering test surface
 * There's seem to have a problem with the fitness function
 * Let's have a step-by-step iteration (keyboard driven) (show what are the differences)
 * Figure out how to profile
+  * https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_performance/opengl_performance.html
 * Have render the scene while trying another iteration (from father or current)?
 * Check if removing a triangle gives the same fitness, then accept that new mutation
 * Render test and goal images side to side
