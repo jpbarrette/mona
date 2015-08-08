@@ -174,6 +174,10 @@ void init_draw()
 {
     int params = -1;
 
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &points_vbo);
     glGenBuffers(1, &colors_vbo);
